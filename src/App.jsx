@@ -1,66 +1,107 @@
 import Header from "./components/Header";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { db } from "./data/db.js";
 import Guitar from "./components/Guitar";
-//imports
-function App() {
-  const [data, setData] = useState(db);
 
-  const [auth, setAuth] = useState(false);
-  const [total, setTotal] = useState(0);
+function App() {
+  const [data] = useState(db);
   const [cart, setCart] = useState([]);
 
+  // AGREGAR GUITARRA AL CARRITO
   function handlerClick(item) {
     const guitarExists = cart.findIndex((guitar) => guitar.id === item.id);
-    //console.log(guitarExists);
-    //setCart((prevCart) => [...cart, { ...item }]);
 
-    //console.log(cart);
+    // Si ya existe
     if (guitarExists >= 0) {
       const updatedCart = [...cart];
+
+      // No permitir más de 5
+      if (updatedCart[guitarExists].quantity >= 5) {
+        return;
+      }
+
       updatedCart[guitarExists].quantity += 1;
       setCart(updatedCart);
     } else {
-      setCart((prevCart) => [...prevCart, { ...item, quantity: 1 }]);
+      // Agregar por primera vez
+      setCart((prevCart) => [
+        ...prevCart,
+        {
+          ...item,
+          quantity: 1,
+        },
+      ]);
     }
   }
-  useEffect(() => {
-    console.log(cart);
-  }, [cart]);
 
-  function CalculoT() {
-    let total = 0; // 1. Declarar e inicializar en 0
+  // AUMENTAR CANTIDAD
+  function increaseQuantity(id) {
+    setCart((prevCart) =>
+      prevCart.map((guitar) => {
+        if (guitar.id === id) {
+          // Máximo 5
+          if (guitar.quantity >= 5) {
+            return guitar;
+          }
 
-    cart.forEach((guitar) => {
-      total += guitar.price * guitar.quantity; // 2. Acumular la suma
-    });
+          return {
+            ...guitar,
+            quantity: guitar.quantity + 1,
+          };
+        }
 
-    return total; // 3. Retornar el valor calculado
+        return guitar;
+      }),
+    );
   }
-  /*
-  data.map((guitar) => {
-    console.log("guitarra encontrada");
-  });
-  */
-  //UseEffect
-  /*
-  useEffect(() => {
-    //Accion al cargar el componente
-    console.log("Componente listo");
-  }, []);
-  useEffect(() => {
-    //Accion al cambio de una variable
-    console.log("Token cambio ");
-  }, [auth]);
-  setTimeout(() => {
-    setAuth(true);
-    setTotal(1000);
-  }, 3000);
-*/
+
+  // DISMINUIR CANTIDAD
+  function decreaseQuantity(id) {
+    setCart((prevCart) =>
+      prevCart
+        .map((guitar) => {
+          if (guitar.id === id) {
+            return {
+              ...guitar,
+              quantity: guitar.quantity - 1,
+            };
+          }
+
+          return guitar;
+        })
+        // Si llega a 0, se elimina
+        .filter((guitar) => guitar.quantity > 0),
+    );
+  }
+
+  // ELIMINAR UNA GUITARRA
+  function removeFromCart(id) {
+    setCart((prevCart) => prevCart.filter((guitar) => guitar.id !== id));
+  }
+
+  // VACIAR CARRITO
+  function clearCart() {
+    setCart([]);
+  }
+
+  // CALCULAR TOTAL
+  function calculateTotal() {
+    return cart.reduce(
+      (total, guitar) => total + guitar.price * guitar.quantity,
+      0,
+    );
+  }
 
   return (
     <>
-      <Header cart={cart} />
+      <Header
+        cart={cart}
+        increaseQuantity={increaseQuantity}
+        decreaseQuantity={decreaseQuantity}
+        removeFromCart={removeFromCart}
+        clearCart={clearCart}
+        total={calculateTotal()}
+      />
 
       <main className="container-xl mt-5">
         <h2 className="text-center">Nuestra Colección</h2>
